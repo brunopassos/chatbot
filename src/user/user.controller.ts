@@ -21,10 +21,10 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  async create(
+  create(
     @Body(new UserValidationPipe()) createUserDto: CreateUserDto,
-  ): Promise<UserResponseDto> {
-    return await this.userService.create(createUserDto);
+  ): UserResponseDto {
+    return this.userService.create(createUserDto);
   }
 
   @Get()

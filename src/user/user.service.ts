@@ -4,14 +4,27 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { randomUUID } from 'crypto';
 import { User } from './entities/user.entity';
-import * as bcrypt from 'bcrypt';
+import { hashSync as bcryptHashSync, compareSync } from 'bcryptjs';
 import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class UserService {
-  private users: User[] = [];
+  private users: User[] = [
+    {
+      id: 'bae0496e-3ef6-411d-8a20-88d7dfefa402',
+      email: 'brunow@mail.com',
+      password: '$2b$10$WRCPSC89mtf1hw1wc2H/5uKdunj8amjinUOc8hdR3i4ulpzxS5wc.',
+      deletedAt: null,
+    },
+    {
+      id: '924e9c07-dd98-477f-822b-3853e9de8fb3',
+      email: 'bruno@mail.com',
+      password: '$2b$10$KCQvAwBbRdHspo3XBYqPc.2Rff7FmMb6CWQxL/wLR1RHdFDEFDOGa',
+      deletedAt: null,
+    },
+  ];
 
-  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  create(createUserDto: CreateUserDto): UserResponseDto {
     const userAlreadyExists = this.users.find(
       (user) => user.email === createUserDto.email,
     );
@@ -23,7 +36,7 @@ export class UserService {
     const newUser: User = {
       id: randomUUID(),
       email: createUserDto.email,
-      password: await bcrypt.hash(createUserDto.password, 10),
+      password: bcryptHashSync(createUserDto.password, 10),
       deletedAt: null,
     };
 
@@ -49,10 +62,30 @@ export class UserService {
     return plainToInstance(UserResponseDto, foundUser);
   }
 
-  async update(
-    id: string,
-    updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  findByEmail(email: string, pass: string): User {
+    const foundUser = this.users.find((user) => user.email === email);
+    const invalidCredentialsMessage = 'Invalid email or password!';
+
+    if (!foundUser) {
+      throw new HttpException(
+        invalidCredentialsMessage,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const passwordMatches = compareSync(pass, foundUser.password);
+
+    if (!passwordMatches) {
+      throw new HttpException(
+        invalidCredentialsMessage,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    return foundUser;
+  }
+
+  update(id: string, updateUserDto: UpdateUserDto): UserResponseDto {
     const foundUser = this.users.find((user) => user.id === id);
 
     if (!foundUser) {
@@ -64,7 +97,7 @@ export class UserService {
     }
 
     if (updateUserDto.password !== undefined) {
-      foundUser.password = await bcrypt.hash(updateUserDto.password, 10);
+      foundUser.password = bcryptHashSync(updateUserDto.password, 10);
     }
 
     return plainToInstance(UserResponseDto, foundUser, {
