@@ -15,12 +15,13 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  password  String
-  deletedAt DateTime? 
+  id           String    @id @default(uuid())
+  email        String    @unique
+  systemPrompt String?
+  password     String
+  deletedAt    DateTime? 
 
-  chats     Chat[]
+  chats        Chat[]
 }
 
 model Chat {

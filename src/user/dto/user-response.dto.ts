@@ -9,4 +9,7 @@ export class UserResponseDto {
 
   @Exclude()
   password?: string;
+
+  @Expose()
+  systemPrompt?: string | null;
 }
