@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ChatMessage } from './interfaces/chat.interface';
+import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 
@@ -7,9 +7,10 @@ import { ConfigService } from '@nestjs/config';
 export class AgentService {
   private openai: OpenAI;
 
-  private chatHistories: Record<string, ChatMessage[]> = {};
-
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private prismaService: PrismaService,
+  ) {
     this.openai = new OpenAI({
       apiKey: this.configService.get<string>('OPENAI_API_KEY'),
     });
@@ -19,49 +20,59 @@ export class AgentService {
     const systemPrompt = {
       role: 'system',
       content:
-        'Você é um assistente educado e prestativo. Sempre responde começando com: "Claro, posso te ajudar com isso!"',
+        'Você é um assistente educado e prestativo. Sempre que for apropriado, inicie suas respostas expressões amigáveis e profissionais. Porém não seja muito formal.',
     };
 
-    const userMessage: ChatMessage = {
-      role: 'user',
-      content: question,
-      timestamp: new Date(),
-    };
+    const recentChats = await this.prismaService.chat.findMany({
+      where: { userId },
+      orderBy: { timestamp: 'asc' },
+    });
 
-    const context = this.chatHistories[userId] || [];
-    context.push(userMessage);
-
-    if (context.length > 5) {
-      context.splice(0, context.length - 5);
+    if (recentChats.length >= 5) {
+      const oldestChat = recentChats[0];
+      await this.prismaService.chat.delete({
+        where: { id: oldestChat.id },
+      });
     }
 
-    this.chatHistories[userId] = context;
+    const createdUserChat = await this.prismaService.chat.create({
+      data: {
+        userId,
+        question,
+        response: '',
+      },
+    });
 
-    const messages = [
+    const contextMessages = [
       systemPrompt,
-      ...context.map((c) => ({ role: c.role, content: c.content })),
-    ] as OpenAI.Chat.Completions.ChatCompletionMessageParam[];
+      ...recentChats.map((chat) => ({
+        role: 'user',
+        content: chat.question,
+      })),
+    ];
+
+    contextMessages.push({
+      role: 'user',
+      content: question,
+    });
 
     const response = await this.openai.chat.completions.create({
       model: 'gpt-4o',
-      messages,
+      messages:
+        contextMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
     });
 
     const reply =
       response.choices[0]?.message?.content ??
       'Desculpe, não consegui responder.';
 
-    context.push({
-      role: 'assistant',
-      content: reply,
-      timestamp: new Date(),
+    await this.prismaService.chat.update({
+      where: { id: createdUserChat.id },
+      data: {
+        response: reply,
+        timestamp: new Date(),
+      },
     });
-
-    if (context.length > 5) {
-      context.splice(0, context.length - 5);
-    }
-
-    this.chatHistories[userId] = context;
 
     return reply;
   }

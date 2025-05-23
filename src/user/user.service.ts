@@ -5,42 +5,29 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { randomUUID } from 'crypto';
 import { User } from './entities/user.entity';
 import { hashSync as bcryptHashSync, compareSync } from 'bcryptjs';
-import { plainToInstance } from 'class-transformer';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class UserService {
-  private users: User[] = [
-    {
-      id: 'bae0496e-3ef6-411d-8a20-88d7dfefa402',
-      email: 'brunow@mail.com',
-      password: '$2b$10$WRCPSC89mtf1hw1wc2H/5uKdunj8amjinUOc8hdR3i4ulpzxS5wc.',
-      deletedAt: null,
-    },
-    {
-      id: '924e9c07-dd98-477f-822b-3853e9de8fb3',
-      email: 'bruno@mail.com',
-      password: '$2b$10$KCQvAwBbRdHspo3XBYqPc.2Rff7FmMb6CWQxL/wLR1RHdFDEFDOGa',
-      deletedAt: null,
-    },
-  ];
+  constructor(private readonly prismaService: PrismaService) {}
 
-  create(createUserDto: CreateUserDto): UserResponseDto {
-    const userAlreadyExists = this.users.find(
-      (user) => user.email === createUserDto.email,
-    );
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    const userAlreadyExists = await this.prismaService.user.findUnique({
+      where: { email: createUserDto.email },
+    });
 
     if (userAlreadyExists) {
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
 
-    const newUser: User = {
-      id: randomUUID(),
-      email: createUserDto.email,
-      password: bcryptHashSync(createUserDto.password, 10),
-      deletedAt: null,
-    };
-
-    this.users.push(newUser);
+    const newUser = await this.prismaService.user.create({
+      data: {
+        id: randomUUID(),
+        email: createUserDto.email,
+        password: bcryptHashSync(createUserDto.password, 10),
+        deletedAt: null,
+      },
+    });
 
     return {
       id: newUser.id,
@@ -48,25 +35,46 @@ export class UserService {
     };
   }
 
-  findAll(): UserResponseDto[] {
-    return plainToInstance(UserResponseDto, this.users);
+  async findAll(): Promise<UserResponseDto[]> {
+    const users = await this.prismaService.user.findMany({
+      where: { deletedAt: null },
+      select: {
+        id: true,
+        email: true,
+      },
+    });
+
+    return users;
   }
 
-  findOne(id: string): UserResponseDto {
-    const foundUser = this.users.find((user) => user.id === id);
+  async findOne(id: string): Promise<UserResponseDto> {
+    const foundUser = await this.prismaService.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        deletedAt: true,
+      },
+    });
 
-    if (!foundUser) {
+    if (!foundUser || foundUser.deletedAt) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    return plainToInstance(UserResponseDto, foundUser);
+    return {
+      id: foundUser.id,
+      email: foundUser.email,
+    };
   }
 
-  findByEmail(email: string, pass: string): User {
-    const foundUser = this.users.find((user) => user.email === email);
+  async findByEmail(email: string, pass: string): Promise<User> {
+    const foundUser = await this.prismaService.user.findUnique({
+      where: { email },
+    });
+
     const invalidCredentialsMessage = 'Invalid email or password!';
 
-    if (!foundUser) {
+    if (!foundUser || foundUser.deletedAt) {
       throw new HttpException(
         invalidCredentialsMessage,
         HttpStatus.UNAUTHORIZED,
@@ -85,35 +93,51 @@ export class UserService {
     return foundUser;
   }
 
-  update(id: string, updateUserDto: UpdateUserDto): UserResponseDto {
-    const foundUser = this.users.find((user) => user.id === id);
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
+    const foundUser = await this.prismaService.user.findUnique({
+      where: { id },
+    });
 
-    if (!foundUser) {
+    if (!foundUser || foundUser.deletedAt) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
+    const data: { email?: string; password?: string } = {};
+
     if (updateUserDto.email !== undefined) {
-      foundUser.email = updateUserDto.email;
+      data.email = updateUserDto.email;
     }
 
     if (updateUserDto.password !== undefined) {
-      foundUser.password = bcryptHashSync(updateUserDto.password, 10);
+      data.password = bcryptHashSync(updateUserDto.password, 10);
     }
 
-    return plainToInstance(UserResponseDto, foundUser, {
-      excludeExtraneousValues: true,
+    const updatedUser = await this.prismaService.user.update({
+      where: { id },
+      data,
     });
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+    };
   }
 
-  remove(id: string): void {
-    const user = this.users.find((u) => u.id === id);
+  async remove(id: string): Promise<void> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+    });
 
-    if (!user) {
+    if (!user || user.deletedAt) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    if (!user.deletedAt) {
-      user.deletedAt = new Date();
-    }
+    await this.prismaService.user.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }

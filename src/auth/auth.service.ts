@@ -15,7 +15,7 @@ export class AuthService {
   ) {}
 
   async signIn(email: string, pass: string): Promise<AuthResponseDto> {
-    const user: User = this.userService.findByEmail(email, pass);
+    const user: User = await this.userService.findByEmail(email, pass);
 
     const invalidCredentialsMessage = 'Invalid email or password!';
 
@@ -34,7 +34,10 @@ export class AuthService {
       throw new Error('EXPIRES_IN not configured');
     }
     return {
-      token: await this.jwtService.signAsync(payload),
+      token: await this.jwtService.signAsync(payload, {
+        secret: this.configService.get('JWT_SECRET'),
+        expiresIn: `${expiresIn}s`,
+      }),
       expiresIn: +expiresIn,
     };
   }
