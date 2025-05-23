@@ -9,5 +9,7 @@ export class User {
 
   deletedAt: Date | null;
 
+  systemPrompt?: string | null;
+
   chats?: Chat[];
 }

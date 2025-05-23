@@ -17,9 +17,14 @@ export class AgentService {
   }
 
   async ask(userId: string, question: string): Promise<string> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+    });
+
     const systemPrompt = {
       role: 'system',
       content:
+        user?.systemPrompt ??
         'Você é um assistente educado e prestativo. Sempre que for apropriado, inicie suas respostas expressões amigáveis e profissionais. Porém não seja muito formal.',
     };
 

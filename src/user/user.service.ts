@@ -41,6 +41,7 @@ export class UserService {
       select: {
         id: true,
         email: true,
+        systemPrompt: true,
       },
     });
 
@@ -54,6 +55,7 @@ export class UserService {
         id: true,
         email: true,
         deletedAt: true,
+        systemPrompt: true,
       },
     });
 
@@ -64,6 +66,7 @@ export class UserService {
     return {
       id: foundUser.id,
       email: foundUser.email,
+      systemPrompt: foundUser.systemPrompt ?? undefined,
     };
   }
 
@@ -105,7 +108,8 @@ export class UserService {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    const data: { email?: string; password?: string } = {};
+    const data: { email?: string; password?: string; systemPrompt?: string } =
+      {};
 
     if (updateUserDto.email !== undefined) {
       data.email = updateUserDto.email;
@@ -113,6 +117,10 @@ export class UserService {
 
     if (updateUserDto.password !== undefined) {
       data.password = bcryptHashSync(updateUserDto.password, 10);
+    }
+
+    if (updateUserDto.systemPrompt !== undefined) {
+      data.systemPrompt = updateUserDto.systemPrompt;
     }
 
     const updatedUser = await this.prismaService.user.update({
@@ -123,6 +131,7 @@ export class UserService {
     return {
       id: updatedUser.id,
       email: updatedUser.email,
+      systemPrompt: updateUserDto.systemPrompt,
     };
   }
 
