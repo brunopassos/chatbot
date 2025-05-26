@@ -15,30 +15,35 @@ export class AuthService {
   ) {}
 
   async signIn(email: string, pass: string): Promise<AuthResponseDto> {
-    const user: User = await this.userService.findByEmail(email, pass);
+    try {
+      const user: User = await this.userService.findByEmail(email, pass);
 
-    const invalidCredentialsMessage = 'Invalid email or password!';
+      const invalidCredentialsMessage = 'Invalid email or password!';
 
-    if (!user) {
-      throw new HttpException(
-        invalidCredentialsMessage,
-        HttpStatus.UNAUTHORIZED,
-      );
+      if (!user) {
+        throw new HttpException(
+          invalidCredentialsMessage,
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const payload: JwtPayload = { sub: user.id, username: user.email };
+
+      const expiresIn = this.configService.get<number>('EXPIRES_IN');
+
+      if (expiresIn === undefined) {
+        throw new Error('EXPIRES_IN not configured');
+      }
+      return {
+        token: await this.jwtService.signAsync(payload, {
+          secret: this.configService.get('JWT_SECRET'),
+          expiresIn: `${expiresIn}s`,
+        }),
+        expiresIn: +expiresIn,
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
     }
-
-    const payload: JwtPayload = { sub: user.id, username: user.email };
-
-    const expiresIn = this.configService.get<number>('EXPIRES_IN');
-
-    if (expiresIn === undefined) {
-      throw new Error('EXPIRES_IN not configured');
-    }
-    return {
-      token: await this.jwtService.signAsync(payload, {
-        secret: this.configService.get('JWT_SECRET'),
-        expiresIn: `${expiresIn}s`,
-      }),
-      expiresIn: +expiresIn,
-    };
   }
 }
