@@ -17,69 +17,74 @@ export class AgentService {
   }
 
   async *streamAsk(userId: string, question: string): AsyncGenerator<string> {
-    const user = await this.prismaService.user.findUnique({
-      where: { id: userId },
-    });
-
-    const systemPrompt = {
-      role: 'system',
-      content:
-        user?.systemPrompt ??
-        'Você é um assistente educado e prestativo. Sempre que for apropriado, inicie suas respostas com expressões amigáveis e profissionais.',
-    };
-
-    const recentChats = await this.prismaService.chat.findMany({
-      where: { userId },
-      orderBy: { timestamp: 'asc' },
-    });
-
-    if (recentChats.length >= 5) {
-      const oldestChat = recentChats[0];
-      await this.prismaService.chat.delete({
-        where: { id: oldestChat.id },
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: { id: userId },
       });
-    }
 
-    const createdUserChat = await this.prismaService.chat.create({
-      data: {
-        userId,
-        question,
-        response: '',
-      },
-    });
+      const systemPrompt = {
+        role: 'system',
+        content:
+          user?.systemPrompt ??
+          'Você é um assistente educado e prestativo. Sempre que for apropriado, inicie suas respostas com expressões amigáveis e profissionais.',
+      };
 
-    const contextMessages = [
-      systemPrompt,
-      ...recentChats.map((chat) => ({
-        role: 'user',
-        content: chat.question,
-      })),
-      { role: 'user', content: question },
-    ];
+      const recentChats = await this.prismaService.chat.findMany({
+        where: { userId },
+        orderBy: { timestamp: 'asc' },
+      });
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
-      stream: true,
-      messages:
-        contextMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-    });
-
-    let fullReply = '';
-
-    for await (const chunk of response) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        fullReply += content;
-        yield content;
+      if (recentChats.length >= 5) {
+        const oldestChat = recentChats[0];
+        await this.prismaService.chat.delete({
+          where: { id: oldestChat.id },
+        });
       }
-    }
 
-    await this.prismaService.chat.update({
-      where: { id: createdUserChat.id },
-      data: {
-        response: fullReply,
-        timestamp: new Date(),
-      },
-    });
+      const createdUserChat = await this.prismaService.chat.create({
+        data: {
+          userId,
+          question,
+          response: '',
+        },
+      });
+
+      const contextMessages = [
+        systemPrompt,
+        ...recentChats.map((chat) => ({
+          role: 'user',
+          content: chat.question,
+        })),
+        { role: 'user', content: question },
+      ];
+
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        stream: true,
+        messages:
+          contextMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+      });
+
+      let fullReply = '';
+
+      for await (const chunk of response) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          fullReply += content;
+          yield content;
+        }
+      }
+
+      await this.prismaService.chat.update({
+        where: { id: createdUserChat.id },
+        data: {
+          response: fullReply,
+          timestamp: new Date(),
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 }
