@@ -1,13 +1,14 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AgentService } from './agent.service';
 import WebSocket, { Server as WebSocketServer } from 'ws';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { AuthenticatedWebSocket } from './interfaces/authenticated-websocket.interface';
 import { IncomingMessage } from './interfaces/incoming-message.interface';
+import { Server as HttpServer } from 'http';
 
 @Injectable()
-export class AgentGateway implements OnModuleInit {
+export class AgentGateway {
   private wss: WebSocketServer;
 
   constructor(
@@ -15,8 +16,8 @@ export class AgentGateway implements OnModuleInit {
     private readonly jwtService: JwtService,
   ) {}
 
-  onModuleInit() {
-    this.wss = new WebSocketServer({ port: 3001 });
+  init(server: HttpServer) {
+    this.wss = new WebSocketServer({ server });
 
     this.wss.on('connection', (ws: WebSocket, req) => {
       const authHeader = req.headers['authorization'];
@@ -40,59 +41,56 @@ export class AgentGateway implements OnModuleInit {
       const authedWs = ws as AuthenticatedWebSocket;
       authedWs.userId = payload.sub;
 
-      ws.on('message', (message: WebSocket.Data) => {
-        void (async () => {
-          const raw =
-            typeof message === 'string'
-              ? message
-              : typeof message === 'object' && Buffer.isBuffer(message)
-                ? message.toString('utf8')
-                : '';
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      ws.on('message', async (message: WebSocket.Data) => {
+        const raw =
+          typeof message === 'string'
+            ? message
+            : Buffer.isBuffer(message)
+              ? message.toString('utf8')
+              : '';
 
-          if (!raw) return;
+        if (!raw) return;
 
-          let parsed: unknown;
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(raw);
+        } catch (err) {
+          console.error('Erro ao fazer parse do JSON:', err);
+          return;
+        }
+
+        if (
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          'event' in parsed &&
+          'data' in parsed &&
+          (parsed as IncomingMessage).event === 'ask'
+        ) {
+          const { question } = (parsed as IncomingMessage).data;
+          const userId = authedWs.userId;
+
           try {
-            parsed = JSON.parse(raw);
-          } catch (err) {
-            console.error('Erro ao fazer parse do JSON:', err);
-            return;
-          }
+            const stream = this.agentService.streamAsk(userId, question);
 
-          if (
-            typeof parsed === 'object' &&
-            parsed !== null &&
-            'event' in parsed &&
-            'data' in parsed &&
-            (parsed as IncomingMessage).event === 'ask'
-          ) {
-            const { question } = (parsed as IncomingMessage).data;
-            const userId = authedWs.userId;
-
-            try {
-              const stream = this.agentService.streamAsk(userId, question);
-
-              for await (const chunk of stream) {
-                ws.send(JSON.stringify({ event: 'stream', data: { chunk } }));
-              }
-
-              ws.send(JSON.stringify({ event: 'done' }));
-            } catch (err) {
-              console.error('Erro durante o processamento do ask:', err);
-              ws.send(
-                JSON.stringify({
-                  event: 'error',
-                  data: { message: 'Erro interno no servidor' },
-                }),
-              );
+            for await (const chunk of stream) {
+              ws.send(JSON.stringify({ event: 'stream', data: { chunk } }));
             }
-          } else {
-            console.warn('Mensagem WebSocket inválida:', parsed);
+
+            ws.send(JSON.stringify({ event: 'done' }));
+          } catch (err) {
+            console.error('Erro durante o processamento do ask:', err);
+            ws.send(
+              JSON.stringify({
+                event: 'error',
+                data: { message: 'Erro interno no servidor' },
+              }),
+            );
           }
-        })();
+        } else {
+          console.warn('Mensagem WebSocket inválida:', parsed);
+        }
       });
     });
-
-    console.log('WebSocket server running on ws://localhost:3001');
   }
 }
