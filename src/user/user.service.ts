@@ -5,7 +5,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { randomUUID } from 'crypto';
 import { User } from './entities/user.entity';
 import { hashSync as bcryptHashSync, compareSync } from 'bcryptjs';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UserService {
