@@ -42,8 +42,10 @@ export class AuthService {
         expiresIn: +expiresIn,
       };
     } catch (error) {
-      console.log(error);
-      throw error;
+      throw new HttpException(
+        `${(error as Error).message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

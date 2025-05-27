@@ -1,4 +1,3 @@
-// src/users/pipes/user-validation.pipe.ts
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { CreateUserDto } from '../dto/create-user.dto';
 

@@ -23,7 +23,7 @@ export class AgentGateway {
       const authHeader = req.headers['authorization'];
 
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        ws.close(4001, 'Token não fornecido ou mal formatado');
+        ws.close(4001, 'Token not provided or poorly formatted');
         return;
       }
 
@@ -33,63 +33,108 @@ export class AgentGateway {
       try {
         payload = this.jwtService.verify<JwtPayload>(token);
       } catch (err) {
-        console.error('Token inválido:', err);
-        ws.close(4002, 'Token inválido');
+        console.error('Invalid token:', err);
+        ws.close(4002, 'Invalid token');
         return;
       }
 
       const authedWs = ws as AuthenticatedWebSocket;
       authedWs.userId = payload.sub;
+      authedWs.isStreaming = false;
 
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      ws.on('message', async (message: WebSocket.Data) => {
-        const raw =
-          typeof message === 'string'
-            ? message
-            : Buffer.isBuffer(message)
-              ? message.toString('utf8')
-              : '';
-
-        if (!raw) return;
-
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(raw);
-        } catch (err) {
-          console.error('Erro ao fazer parse do JSON:', err);
-          return;
+      ws.on('close', () => {
+        if (authedWs.abortController) {
+          authedWs.abortController.abort();
+          console.log(
+            `[${authedWs.userId}] Connection closed — stream canceled.`,
+          );
         }
+      });
 
-        if (
-          typeof parsed === 'object' &&
-          parsed !== null &&
-          'event' in parsed &&
-          'data' in parsed &&
-          (parsed as IncomingMessage).event === 'ask'
-        ) {
-          const { question } = (parsed as IncomingMessage).data;
-          const userId = authedWs.userId;
+      ws.on('message', (message: WebSocket.Data) => {
+        void (async () => {
+          const raw =
+            typeof message === 'string'
+              ? message
+              : Buffer.isBuffer(message)
+                ? message.toString('utf8')
+                : '';
 
+          if (!raw) return;
+
+          let parsed: unknown;
           try {
-            const stream = this.agentService.streamAsk(userId, question);
+            parsed = JSON.parse(raw);
+          } catch (err) {
+            console.error('Error parsing JSON:', err);
+            return;
+          }
 
-            for await (const chunk of stream) {
-              ws.send(JSON.stringify({ event: 'stream', data: { chunk } }));
+          if (
+            typeof parsed === 'object' &&
+            parsed !== null &&
+            'event' in parsed &&
+            'data' in parsed &&
+            (parsed as IncomingMessage).event === 'ask'
+          ) {
+            const { question } = (parsed as IncomingMessage).data;
+            const userId = authedWs.userId;
+
+            if (authedWs.isStreaming) {
+              ws.send(
+                JSON.stringify({
+                  event: 'error',
+                  data: { message: 'There is already a question in progress.' },
+                }),
+              );
+              return;
             }
 
-            ws.send(JSON.stringify({ event: 'done' }));
-          } catch (err) {
-            console.error('Erro durante o processamento do ask:', err);
-            ws.send(
-              JSON.stringify({
-                event: 'error',
-                data: { message: 'Erro interno no servidor' },
-              }),
-            );
+            authedWs.isStreaming = true;
+            const abortController = new AbortController();
+            authedWs.abortController = abortController;
+
+            try {
+              const stream = this.agentService.streamAsk(
+                userId,
+                question,
+                abortController.signal,
+              );
+
+              for await (const chunk of stream) {
+                ws.send(
+                  JSON.stringify({
+                    event: 'stream',
+                    data: {
+                      userId,
+                      token: chunk,
+                      timestamp: Date.now(),
+                    },
+                  }),
+                );
+              }
+
+              ws.send(JSON.stringify({ event: 'done' }));
+            } catch (err) {
+              if (abortController.signal.aborted) {
+                console.log(`[${userId}] Stream aborted.`);
+              } else {
+                console.error('Error while processing ask:', err);
+                ws.send(
+                  JSON.stringify({
+                    event: 'error',
+                    data: { message: 'Internal server error' },
+                  }),
+                );
+              }
+            } finally {
+              authedWs.isStreaming = false;
+              authedWs.abortController = undefined;
+            }
+          } else {
+            console.warn('Invalid WebSocket Message:', parsed);
           }
-        } else {
-          console.warn('Mensagem WebSocket inválida:', parsed);
-        }
+        });
       });
     });
   }
