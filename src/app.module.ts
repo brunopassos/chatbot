@@ -7,9 +7,17 @@ import { ConfigModule } from '@nestjs/config';
 import { AgentModule } from './agent/agent.module';
 import { PrismaService } from './prisma/prisma.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { HealthModule } from './health/health.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
+    PrometheusModule.register({
+      defaultMetrics: {
+        enabled: true,
+      },
+    }),
     UserModule,
     AuthModule,
     ConfigModule.forRoot({
@@ -17,6 +25,8 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     AgentModule,
     PrismaModule,
+    HealthModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

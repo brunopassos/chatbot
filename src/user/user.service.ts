@@ -35,8 +35,10 @@ export class UserService {
         email: newUser.email,
       };
     } catch (error) {
-      console.log(error);
-      throw error;
+      throw new HttpException(
+        `Error creating user: ${(error as Error).message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -53,8 +55,10 @@ export class UserService {
 
       return users;
     } catch (error) {
-      console.log(error);
-      throw error;
+      throw new HttpException(
+        `Error fetching users: ${(error as Error).message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -80,8 +84,10 @@ export class UserService {
         systemPrompt: foundUser.systemPrompt ?? undefined,
       };
     } catch (error) {
-      console.log(error);
-      throw error;
+      throw new HttpException(
+        `Error fetching user: ${(error as Error).message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -111,8 +117,10 @@ export class UserService {
 
       return foundUser;
     } catch (error) {
-      console.log(error);
-      throw error;
+      throw new HttpException(
+        `Error fetching user: ${(error as Error).message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -155,8 +163,10 @@ export class UserService {
         systemPrompt: updateUserDto.systemPrompt,
       };
     } catch (error) {
-      console.log(error);
-      throw error;
+      throw new HttpException(
+        `Error updating user: ${(error as Error).message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -175,8 +185,10 @@ export class UserService {
         data: { deletedAt: new Date() },
       });
     } catch (error) {
-      console.log(error);
-      throw error;
+      throw new HttpException(
+        `Error deleting user: ${(error as Error).message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

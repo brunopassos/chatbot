@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { Counter } from 'prom-client';
+import { CHAT_REQUESTS_TOTAL } from '../metrics/metrics.module';
 
 @Injectable()
 export class AgentService {
@@ -10,17 +12,26 @@ export class AgentService {
   constructor(
     private configService: ConfigService,
     private prismaService: PrismaService,
+    @Inject(CHAT_REQUESTS_TOTAL) private chatCounter: Counter<string>,
   ) {
     this.openai = new OpenAI({
       apiKey: this.configService.get<string>('OPENAI_API_KEY'),
     });
   }
 
-  async *streamAsk(userId: string, question: string): AsyncGenerator<string> {
+  async *streamAsk(
+    userId: string,
+    question: string,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string> {
     try {
+      this.chatCounter.inc();
+
       const user = await this.prismaService.user.findUnique({
         where: { id: userId },
       });
+
+      //validar se o usuário existe
 
       const systemPrompt = {
         role: 'system',
@@ -58,16 +69,26 @@ export class AgentService {
         { role: 'user', content: question },
       ];
 
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
-        stream: true,
-        messages:
-          contextMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-      });
+      const response = await this.openai.chat.completions.create(
+        {
+          model: 'gpt-4o',
+          stream: true,
+          messages:
+            contextMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+        },
+        {
+          signal,
+        },
+      );
 
       let fullReply = '';
 
       for await (const chunk of response) {
+        if (signal?.aborted) {
+          console.log(`[${userId}] Streaming aborted by client.`);
+          break;
+        }
+
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
           fullReply += content;
@@ -83,8 +104,7 @@ export class AgentService {
         },
       });
     } catch (error) {
-      console.log(error);
-      throw error;
+      yield `[ERROR]: ${(error as Error).message}`;
     }
   }
 }

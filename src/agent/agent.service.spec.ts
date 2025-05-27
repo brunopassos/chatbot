@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AgentService } from './agent.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { CHAT_REQUESTS_TOTAL } from '../metrics/metrics.module';
+import { Counter } from 'prom-client';
 
 describe('AgentService', () => {
   let service: AgentService;
@@ -27,12 +29,17 @@ describe('AgentService', () => {
     yield { choices: [{ delta: { content: 'World!' } }] };
   };
 
+  const mockChatCounter: Partial<Counter<string>> = {
+    inc: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AgentService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: CHAT_REQUESTS_TOTAL, useValue: mockChatCounter },
       ],
     }).compile();
 
