@@ -19,6 +19,9 @@ describe('UserService', () => {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    chat: {
+      findMany: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -84,6 +87,62 @@ describe('UserService', () => {
       expect(mockPrismaService.user.findMany).toHaveBeenCalledWith({
         where: { deletedAt: null },
         select: { id: true, email: true, systemPrompt: true },
+      });
+    });
+  });
+
+  describe('findUserChats', () => {
+    it('should throw if user is not found', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValueOnce(null);
+
+      await expect(service.findUserChats('1')).rejects.toThrow(HttpException);
+    });
+
+    it('should throw if user is soft-deleted', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValueOnce({
+        id: '1',
+        email: 'test@example.com',
+        deletedAt: new Date(),
+        systemPrompt: null,
+      });
+
+      await expect(service.findUserChats('1')).rejects.toThrow(HttpException);
+    });
+
+    it('should return chats for a valid user', async () => {
+      const mockChats = [
+        {
+          id: 'chat1',
+          userId: '1',
+          question: 'Olá?',
+          response: 'Oi!',
+          timestamp: new Date(),
+        },
+        {
+          id: 'chat2',
+          userId: '1',
+          question: 'Tudo bem?',
+          response: 'Tudo ótimo!',
+          timestamp: new Date(),
+        },
+      ];
+
+      mockPrismaService.user.findUnique.mockResolvedValueOnce({
+        id: '1',
+        email: 'test@example.com',
+        deletedAt: null,
+        systemPrompt: null,
+      });
+
+      mockPrismaService.chat = {
+        findMany: jest.fn().mockResolvedValueOnce(mockChats),
+      };
+
+      const result = await service.findUserChats('1');
+
+      expect(result).toEqual(mockChats);
+      expect(mockPrismaService.chat.findMany).toHaveBeenCalledWith({
+        where: { userId: '1' },
       });
     });
   });

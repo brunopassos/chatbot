@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import { User } from './entities/user.entity';
 import { hashSync as bcryptHashSync, compareSync } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { Chat } from '../agent/entities/chat.entity';
 
 @Injectable()
 export class UserService {
@@ -57,6 +58,37 @@ export class UserService {
     } catch (error) {
       throw new HttpException(
         `Error fetching users: ${(error as Error).message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findUserChats(id: string): Promise<Chat[]> {
+    try {
+      const foundUser = await this.prismaService.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          email: true,
+          deletedAt: true,
+          systemPrompt: true,
+        },
+      });
+
+      if (!foundUser || foundUser.deletedAt) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      const userChats = await this.prismaService.chat.findMany({
+        where: {
+          userId: id,
+        },
+      });
+
+      return userChats;
+    } catch (error) {
+      throw new HttpException(
+        `Error fetching user chats: ${(error as Error).message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
