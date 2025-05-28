@@ -1,5 +1,3 @@
-import { User } from 'src/user/entities/user.entity';
-
 export class Chat {
   id: string;
 
@@ -10,6 +8,4 @@ export class Chat {
   response: string;
 
   timestamp: Date;
-
-  user?: User;
 }

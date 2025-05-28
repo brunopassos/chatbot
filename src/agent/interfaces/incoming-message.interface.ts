@@ -1,6 +1,6 @@
 import { AskPayload } from './ask-payload.interface';
 
-export interface IncomingMessage {
+export interface Message {
   event: 'ask';
   data: AskPayload;
 }
