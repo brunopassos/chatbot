@@ -1,98 +1,318 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Chatbot
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Sessões do README
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```json
+1 - O que você precisa saber antes de rodar o projeto?
+2 - Como rodar o Projeto
+3 - Documentação
 ```
 
-## Compile and run the project
+## O que você precisa saber antes de rodar o projeto?
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```json
+1 - Antes de iniciar o setup, é necessário que o Docker esteja em execução.
+2 - Variáveis de ambiente necessárias já estão sendo disponibilizadas (`.env.example`) pois é um projeto de teste.
+3 - Versão do Node suportada: 22.12.0
 ```
 
-## Run tests
+## Como rodar o projeto
 
-```bash
-# unit tests
-$ npm run test
+## 1. Faça o clone do repositório
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```json
+git clone <URL_DO_REPOSITORIO>
 ```
 
-## Deployment
+## 2. Entre na pasta `chatbot` e rode o setup
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```json
+cd chatbot
+crie um arquivo .env na raiz do projeto e copie o conteúdo de .env.example para .env
+npm run setup
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Obs: Utilize esse comando somente na primeira vez que for rodar a aplicação. Esse comando irá instalar todas as dependencias, subir o banco, rodar as migrations e subir a aplicação.
 
-## Resources
+## 3. Rode o projeto:
 
-Check out a few resources that may come in handy when working with NestJS:
+Caso precise rodar o projeto novamente, é só rodar o comando abaixo:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```json
+npm run start:dev
+```
 
-## Support
+## 4. Testes
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```json
+npm run test
+```
 
-## Stay in touch
+## 5. Deploy Railway
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- Endereço da aplicação rodando na Railway `https://chatbot-production-4f85.up.railway.app`
+- Endereço para conversar com o Agente: `ws://chatbot-production-4f85.up.railway.app`
 
-## License
+## Documentação
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Endpoints REST
+
+### 📦 Auth
+
+#### 🔐 Login
+
+`POST /api/v1/auth/login`
+
+Autentica um usuário e retorna um token JWT.
+
+**Body:**
+
+```json
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+```
+
+**Response:**
+
+```json
+{
+  "token": "jwt-token-aqui",
+  "expiresIn": 3600
+}
+```
+
+---
+
+### 👤 Usuário
+
+Base path: `/api/v1/user`
+
+#### 📌 Criar usuário
+
+`POST /api/v1/user`
+
+**Body:**
+
+```json
+{
+  "email": "usuario@example.com",
+  "password": "senha123"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "uuid-gerado",
+  "email": "usuario@example.com",
+  "systemPrompt": null
+}
+```
+
+---
+
+#### 🔐 Listar todos os usuários
+
+`GET /api/v1/user`
+
+**Headers:**
+
+```http
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+[
+  {
+    "id": "uuid",
+    "email": "usuario@example.com",
+    "systemPrompt": null
+  }
+]
+```
+
+---
+
+#### 🔐 Buscar usuário por ID
+
+`GET /api/v1/user/:id`
+
+**Headers:**
+
+```http
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "email": "usuario@example.com",
+  "systemPrompt": null
+}
+```
+
+---
+
+#### 🔐 Buscar chats do usuário
+
+`GET /api/v1/user/:id/chats`
+
+**Headers:**
+
+```http
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+[
+  {
+    "id": "chat-uuid",
+    "question": "Qual é a capital do Brasil?",
+    "response": "A capital do Brasil é Brasília.",
+    "timestamp": "2024-05-01T00:00:00Z",
+    "userId": "uuid"
+  }
+]
+```
+
+---
+
+#### 🔐 Atualizar usuário
+
+`PATCH /api/v1/user/:id`
+
+**Headers:**
+
+```http
+Authorization: Bearer <token>
+```
+
+**Body:**
+
+```json
+{
+  "email": "novo-email@example.com",
+  "password": "novasenha123",
+  "systemPrompt": "Você é um assistente amigável e educado."
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "email": "novo-email@example.com",
+  "systemPrompt": "Você é um assistente amigável e educado."
+}
+```
+
+---
+
+#### 🔐 Deletar usuário
+
+`DELETE /api/v1/user/:id`
+
+**Headers:**
+
+```http
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```http
+204 No Content
+```
+
+---
+
+### 🧠 WebSocket (Perguntas via IA)
+
+**Endpoint local:** `ws://localhost:3000`
+**Endpoint produção (Railway):** `ws://chatbot-production-4f85.up.railway.app`
+
+Autenticação: deve ser feita via header `Authorization: Bearer <token>`
+
+**Mensagem para perguntar algo:**
+
+```json
+{
+  "event": "ask",
+  "data": {
+    "question": "Qual a capital do estado do espirito santo?"
+  }
+}
+```
+
+**Respostas esperadas:**
+
+```json
+{
+  "event": "stream",
+  "data": {
+    "userId": "uuid",
+    "token": "Vitória",
+    "timestamp": 1716243239800
+  }
+}
+```
+
+Finalização do stream:
+
+```json
+{
+  "event": "done"
+}
+```
+
+---
+
+### ❤️ Health Check
+
+`GET /api/v1/health`
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "info": {
+    "prisma": {
+      "status": "up"
+    }
+  },
+  "error": {},
+  "details": {
+    "prisma": {
+      "status": "up"
+    }
+  }
+}
+```
+
+---
+
+### 📊 Métricas Prometheus
+
+- Métrica registrada:
+
+  - `chat_requests_total`: Número total de perguntas feitas ao agente de IA.
+
+A métrica é incrementada automaticamente toda vez que uma pergunta é feita via WebSocket.
+
+---
+
+## 🔐 Autenticação
+
+- A maioria das rotas (exceto criação de usuário e login) requerem token JWT.
+- Use o header `Authorization: Bearer <token>` para autenticar requisições.
