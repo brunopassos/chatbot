@@ -12,7 +12,7 @@
 
 ```json
 1 - Antes de iniciar o setup, é necessário que o Docker esteja em execução.
-2 - Variáveis de ambiente necessárias já estão sendo disponibilizadas (`.env.example`) pois é um projeto de teste.
+2 - Variáveis de ambiente necessárias já estão sendo disponibilizadas (`.env.example`) pois é um projeto de teste. Somente se faz necessário que seja inserida a OPENAI_API_KEY
 3 - Versão do Node suportada: 22.12.0
 ```
 
